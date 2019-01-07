@@ -31,15 +31,15 @@
                     <!--
                     將 notes 綁定到表格上，分別呈現 id, title, date (10%)
                     -->
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                    <tr v-for="(note,index) in notes">
+                        <td>{{note.id}}</td>
+                        <td>{{note.title}}</td>
+                        <td>{{note.date}}</td>
                         <td>
                             <!--
                             將 click 綁到 vue 的 edit(note); (10%)
                             -->
-                            <button class="btn btn-primary">EDIT</button>
+                            <button class="btn btn-primary" v-on:click='edit(note);'>EDIT</button>
                             <button class="btn btn-danger" v-on:click='deleteNote(note);'>DELETE</button>
                         </td>
                     </tr>
@@ -65,10 +65,10 @@
                         note.content
                         要用可編輯的方式 (10%)
                         -->
-                        ID: <input class="form-control" type='text'></input>
-                        Title: <input class="form-control" type='text'></input>
-                        Date: <input class="form-control" type='date'></input>
-                        Content: <textarea class="form-control" rows='3'></textarea>
+                        ID: <input class="form-control" type='text' v-model="note.header.id"></input>
+                        Title: <input class="form-control" type='text'v-model="note.header.title" ></input>
+                        Date: <input class="form-control" type='date' v-model="note.header.date"></input>
+                        Content: <textarea class="form-control" rows='3' v-model="note.content"></textarea>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -80,91 +80,91 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
         <script>
-            var model = null;
-            var editTypeAdd = true;
-            var dlgModel = new Vue({
-                el: "#inputModal",
-                data: {
-                    note: {
-                        header: {
-                            id: "",
-                            title: "",
-                            date: ""
-                        },
-                        content: ""
+var model = null;
+var editTypeAdd = true;
+var dlgModel = new Vue({
+    el: "#inputModal",
+    data: {
+        note: {
+            header: {
+                id: "",
+                title: "",
+                date: ""
+            },
+            content: ""
+        }
+    },
+    methods: {
+        save: function (note) {
+            if (editTypeAdd) {
+                $.ajax("webapi/note", {
+                    type: "POST",
+                    data: JSON.stringify(note),
+                    contentType: "application/json",
+                    success: function () {
+                        $('#inputModal').modal('hide');
+                        loadNoteList();
                     }
-                },
-                methods: {
-                    save: function (note) {
-                        if (editTypeAdd) {
-                            $.ajax("webapi/note", {
-                                type: "POST",
-                                data: JSON.stringify(note),
-                                contentType: "application/json",
-                                success: function () {
-                                    $('#inputModal').modal('hide');
-                                    loadNoteList();
-                                }
-                            });
-                        }else{
-                            $.ajax("webapi/note", {
-                                type: "PUT",
-                                data: JSON.stringify(note),
-                                contentType: "application/json",
-                                success: function () {
-                                    $('#inputModal').modal('hide');
-                                    loadNoteList();
-                                }
-                            });
-                        }
+                });
+            } else {
+                $.ajax("webapi/note", {
+                    type: "PUT",
+                    data: JSON.stringify(note),
+                    contentType: "application/json",
+                    success: function () {
+                        $('#inputModal').modal('hide');
+                        loadNoteList();
                     }
-                }
-            });
+                });
+            }
+        }
+    }
+});
 
-            function loadNoteList() {
-                $.ajax("webapi/notes", {
-                    success: function (data) {
-                        if (model != null) {
-                            model.notes = data;
-                        } else {
-                            model = new Vue({
-                                el: "#app",
-                                data: {
-                                    notes: data
-                                },
-                                methods: {
-                                    edit: function (noteHeader) {
-                                        editTypeAdd = false;
-                                        $.ajax("webapi/note/"+noteHeader.id, {
-                                            success: function(data){
-                                                dlgModel.note=data;
-                                                $('#inputModal').modal('show');
-                                            }
-                                        });
-                                    },
-                                    add: function () {
-                                        editTypeAdd = true;
-                                        dlgModel.note.header.id = "";
-                                        dlgModel.note.header.title = "";
-                                        dlgModel.note.header.date = "";
-                                        dlgModel.note.content = "";
-                                        $('#inputModal').modal('show');
-                                    },
-                                    deleteNote: function(noteHeader){
-                                        $.ajax("webapi/note/"+noteHeader.id, {
-                                            type:"DELETE",
-                                            success: function(){
-                                                loadNoteList();
-                                            }
-                                        });
-                                    }
+function loadNoteList() {
+    $.ajax("webapi/notes", {
+        success: function (data) {
+            if (model != null) {
+                model.notes = data;
+            } else {
+                model = new Vue({
+                    el: "#app",
+                    data: {
+                        notes: data
+                    },
+                    methods: {
+                        edit: function (noteHeader) {
+                            editTypeAdd = false;
+                            $.ajax("webapi/note/" + noteHeader.id, {
+                                success: function (data) {
+                                    dlgModel.note = data;
+                                    $('#inputModal').modal('show');
+                                }
+                            });
+                        },
+                        add: function () {
+                            editTypeAdd = true;
+                            dlgModel.note.header.id = "";
+                            dlgModel.note.header.title = "";
+                            dlgModel.note.header.date = "";
+                            dlgModel.note.content = "";
+                            $('#inputModal').modal('show');
+                        },
+                        deleteNote: function (noteHeader) {
+                            $.ajax("webapi/note/" + noteHeader.id, {
+                                type: "DELETE",
+                                success: function () {
+                                    loadNoteList();
                                 }
                             });
                         }
                     }
                 });
             }
-            loadNoteList();
+        }
+    });
+}
+loadNoteList();
         </script>
     </body>
 </html>
